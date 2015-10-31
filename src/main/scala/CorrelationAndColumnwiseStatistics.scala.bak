@@ -1,0 +1,14 @@
+import sqlContext.implicits._
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.stat.{MultivariateStatisticalSummary, Statistics}
+
+val landings = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema","true").load("/projectx/datasets/SFO_Passenger_Cargo_Landing/data.csv")
+
+// correlation
+val seriesX = landings.map(c => (c(12).asInstanceOf[Integer].toDouble))
+val seriesY = landings.map(c => (c(13).asInstanceOf[Integer].toDouble))
+val correlation = Statistics.corr(seriesX, seriesY, "pearson")
+
+// columne wise statistics
+val landingsVector = landings.map(c => Vectors.dense(c(12).asInstanceOf[Integer].toDouble,c(13).asInstanceOf[Integer].toDouble))
+val summary: MultivariateStatisticalSummary = Statistics.colStats(landingsVector)
