@@ -65,6 +65,7 @@ object generateColumnMeta {
 	def extractColumnMeta(path:String, sc:SparkContext,sqlContext:SQLContext, fileSystem:org.apache.hadoop.fs.FileSystem) : Map[String,Map[String, String]] = {
 		val NORMALIZED_DATASET_PATH = config.getString("projectx.backend.filesystem.path.normalized_dataset")
 		val CATEGORICAL_COLUMN_THRESHOLD = config.getDouble("projectx.backend.threshold.categorical_column_ratio")
+		val COLUMN_CORRELATION_DEFAULT_PATH = config.getString("projectx.backend.filesystem.path.column_correlation")
 		val SPECIAL_COLUMN_THRESHOLD = config.getDouble("projectx.backend.threshold.columntype_inference_ratio")
 		val ENABLE_COLUMN_EXTRACT_META = config.getBoolean("projectx.backend.features.enable_extract_column_meta")
 		val ENABLE_CORRELATION_MATRIX = config.getBoolean("projectx.backend.features.enable_correlation_matrix")
@@ -162,6 +163,9 @@ object generateColumnMeta {
 		}
 		if (!correlationColumns.isEmpty && ENABLE_CORRELATION_MATRIX) {
 			correlation.extract(correlationColumns.toList, dataset, datasetName, fileSystem, sc, sqlContext)
+		} else if (correlationColumns.isEmpty) {
+			val path = COLUMN_CORRELATION_DEFAULT_PATH + "/" + datasetName
+			scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(path), true) }
 		}
 		return colMap
 	}

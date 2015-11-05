@@ -1,0 +1,3 @@
+type=command
+command=spark-submit --class com.projectx.backend.joinInference --master yarn-client --executor-memory 4g --num-executors 5 /root/projectx_2.10-1.0.jar force
+dependencies=generateColumnMeta

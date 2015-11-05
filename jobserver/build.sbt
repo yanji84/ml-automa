@@ -1,0 +1,13 @@
+name := "Jobserver"
+version := "1.0"
+scalaVersion := "2.10.4"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "1.4.1"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "1.4.1"
+libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.1"
+libraryDependencies += "com.databricks" % "spark-csv_2.11" % "1.2.0"
+libraryDependencies += "com.typesafe" % "config" % "1.3.0"
+libraryDependencies += "spark.jobserver" %% "job-server-api" % "0.6.0" % "provided"
+libraryDependencies += "spark.jobserver" %% "job-server-extras" % "0.6.0" % "provided"
+
+resolvers += "Akka Repository" at "http://repo.akka.io/releases/"
+resolvers += "Job Server Bintray" at "https://dl.bintray.com/spark-jobserver/maven"

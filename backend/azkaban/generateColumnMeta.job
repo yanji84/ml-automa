@@ -1,0 +1,2 @@
+type=command
+command=spark-submit --packages com.rubiconproject.oss:jchronic:0.2.6,com.databricks:spark-csv_2.11:1.2.0 --jars /root/s2-geometry-java.jar --class com.projectx.backend.generateColumnMeta --master yarn-client --executor-memory 4g --num-executors 5 --conf spark.akka.frameSize=1024 /root/projectx_2.10-1.0.jar force

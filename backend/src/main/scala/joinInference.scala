@@ -39,10 +39,11 @@ object joinInference {
 		var joinMap:Map[String,Map[String, String]] = Map()
 		// infer join on categorical column and normalized columns only
 		var allColumnMetaDF = sqlContext.read.json(COLUMN_META_DEFAULT_PATH + "/*/*")
-		// 1. infer join for non-integer type categorical column
+		// 1. infer join for non-numeric type categorical column
 		// 2. infer join for normalized columns
 		allColumnMetaDF = allColumnMetaDF.filter(((allColumnMetaDF("Properties")("inferredType") === "none") &&
 												  (allColumnMetaDF("Properties")("columnType") !== "IntegerType") &&
+												  (allColumnMetaDF("Properties")("columnType") !== "DoubleType") &&
 												  (allColumnMetaDF("Properties")("categorical") === "true")) ||
 												 (allColumnMetaDF("Properties")("columnName").startsWith("___normalize")))
 		allColumnMetaDF = allColumnMetaDF.select("Properties.columnName",
@@ -79,7 +80,8 @@ object joinInference {
 						val restDatasetColumns = allColumnMetaDF.filter(allColumnMetaDF("datasetName") === restDataset).select("columnName",
 																															   "bloomFilter",
 																															   "bloomFilterNumBuckets",
-																															   "bloomFilterNumHashFunctions").collect()
+																															   "bloomFilterNumHashFunctions",
+																															   "uniqueItems").collect()
 						for (restDatasetColumn <- restDatasetColumns) {
 							var restColumnSpecialType = "none"
 							if (restDatasetColumn(0).toString.startsWith("___normalize")) {
@@ -91,12 +93,17 @@ object joinInference {
 																							  restDatasetColumn(1).toString)
 								var numMatched = 0.0
 								val selectedColumnUniqueItems = selectedDatasetColumn(1).toString.split("\n")
+								val restColumnUniqueItems = restDatasetColumn(4).toString.split("\n")
 								for (selectedColumnUniqueItem <- selectedColumnUniqueItems) {
-									if (colBloomFilter.contains(selectedColumnUniqueItem.drop(1).dropRight(1))) {
+									val item = selectedColumnUniqueItem.drop(1).dropRight(1).toLowerCase
+									if (item != "" && colBloomFilter.contains(item)) {
 										numMatched += 1.0
 									}
 								}
-								val matchRate = numMatched / (selectedColumnUniqueItems.length + 0.0)
+								var matchRate = numMatched / (selectedColumnUniqueItems.length + 0.0)
+								if ((numMatched / (restColumnUniqueItems.length + 0.0)) > matchRate) {
+									matchRate = numMatched / (restColumnUniqueItems.length + 0.0)
+								}
 								if (matchRate > JOIN_INFERENCE_THRESHOLD) {
 									// infer join
 									val col1 = selectedDatasetColumn(0)

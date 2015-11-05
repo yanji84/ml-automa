@@ -49,19 +49,21 @@ object correlation {
 		val correlationArray = correlationMatrix.toArray
 		val columnNames = dataset.columns.filter(columnName => columnIndices.contains(dataset.columns.indexOf(columnName)))
 		for (i <- 0 until correlationArray.length) {
-			val col = i / numCols
-			val row = i % numRows
-			val edgeKey = datasetName + ":" + columnNames(col) + "-" + datasetName + ":" + columnNames(row) + "-correlation"
-			val significant = math.abs(correlationArray(i)) > CORRELATION_SIGNIFICANCE_THRESHOLD
-			if (row > col) {
-				corMap += (edgeKey -> Map("col1" -> columnNames(col),
-										  "col2" -> columnNames(row),
-										  "dataset1" -> datasetName,
-										  "dataset2" -> datasetName,
-										  "relationship" -> "correlation",
-										  "value" -> correlationArray(i).toString(),
-										  "significant" -> significant.toString(),
-										  "significance_level" -> CORRELATION_SIGNIFICANCE_THRESHOLD.toString()))
+			if (correlationArray(i).toString != "NaN") {
+				val col = i / numCols
+				val row = i % numRows
+				val edgeKey = datasetName + ":" + columnNames(col) + "-" + datasetName + ":" + columnNames(row) + "-correlation"
+				val significant = math.abs(correlationArray(i)) > CORRELATION_SIGNIFICANCE_THRESHOLD
+				if (row > col && significant) {
+					corMap += (edgeKey -> Map("col1" -> columnNames(col),
+											  "col2" -> columnNames(row),
+											  "dataset1" -> datasetName,
+											  "dataset2" -> datasetName,
+											  "relationship" -> "correlation",
+											  "value" -> correlationArray(i).toString,
+											  "significant" -> significant.toString,
+											  "significance_level" -> CORRELATION_SIGNIFICANCE_THRESHOLD.toString))
+				}				
 			}
 		}
 		import sqlContext.implicits._
