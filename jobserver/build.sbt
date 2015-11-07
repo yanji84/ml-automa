@@ -8,6 +8,7 @@ libraryDependencies += "com.databricks" % "spark-csv_2.11" % "1.2.0"
 libraryDependencies += "com.typesafe" % "config" % "1.3.0"
 libraryDependencies += "spark.jobserver" %% "job-server-api" % "0.6.0" % "provided"
 libraryDependencies += "spark.jobserver" %% "job-server-extras" % "0.6.0" % "provided"
+libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
 resolvers += "Akka Repository" at "http://repo.akka.io/releases/"
 resolvers += "Job Server Bintray" at "https://dl.bintray.com/spark-jobserver/maven"

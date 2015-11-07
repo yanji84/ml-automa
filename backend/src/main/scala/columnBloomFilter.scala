@@ -36,9 +36,11 @@ object columnBloomFilter {
 				bloomAccumulable += r(0).toString()
 			}
 		})
-		(Base64.encodeBase64String(bloomFilter.bits.toByteArray()), bloomFilter.numHashFunctions, bloomFilter.numBuckets)
+		(serializeBloomFilter(bloomFilter), bloomFilter.numHashFunctions, bloomFilter.numBuckets)
 	}
-
+	def serializeBloomFilter(bloomFilter:BloomFilter[String]) : String = {
+		Base64.encodeBase64String(bloomFilter.bits.toByteArray())
+	}
 	def deserializeBloomFilter(numHashFunctions:Integer, numBuckets:Integer, stringifiedBits:String) : BloomFilter[String] = {
 		new BloomFilter[String](numBuckets, numHashFunctions, BitSet.valueOf(Base64.decodeBase64(stringifiedBits)))
 	}

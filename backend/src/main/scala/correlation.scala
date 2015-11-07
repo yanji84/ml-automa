@@ -1,9 +1,12 @@
 package com.projectx.backend
+
 import com.typesafe.config.ConfigFactory
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.stat.Statistics
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.FSDataOutputStream
 
 /**
 *
@@ -26,7 +29,7 @@ object correlation {
 		val COLUMN_CORRELATION_DEFAULT_PATH = config.getString("projectx.backend.filesystem.path.column_correlation")
 		val CORRELATION_SIGNIFICANCE_THRESHOLD = config.getDouble("projectx.backend.threshold.correlation_significance")
 		val NA_DEFAULT_ENCODING = config.getDouble("projectx.backend.na_default_encoding")
-		var corMap:Map[String,Map[String, String]] = Map()
+		var corMapArray = Array[Map[String, String]]()
 		val columnTypes = dataset.dtypes
 		val rddVector = dataset.map(c => {
 			var columnValues = Array[Double]()
@@ -52,24 +55,28 @@ object correlation {
 			if (correlationArray(i).toString != "NaN") {
 				val col = i / numCols
 				val row = i % numRows
-				val edgeKey = datasetName + ":" + columnNames(col) + "-" + datasetName + ":" + columnNames(row) + "-correlation"
 				val significant = math.abs(correlationArray(i)) > CORRELATION_SIGNIFICANCE_THRESHOLD
 				if (row > col && significant) {
-					corMap += (edgeKey -> Map("col1" -> columnNames(col),
-											  "col2" -> columnNames(row),
-											  "dataset1" -> datasetName,
-											  "dataset2" -> datasetName,
-											  "relationship" -> "correlation",
-											  "value" -> correlationArray(i).toString,
-											  "significant" -> significant.toString,
-											  "significance_level" -> CORRELATION_SIGNIFICANCE_THRESHOLD.toString))
+					val corMap = Map("col1" -> columnNames(col),
+							         "col2" -> columnNames(row),
+							         "dataset1" -> datasetName,
+							         "dataset2" -> datasetName,
+							         "relationship" -> "correlation",
+							         "value" -> correlationArray(i).toString,
+							         "significant" -> significant.toString,
+							         "significance_level" -> CORRELATION_SIGNIFICANCE_THRESHOLD.toString)
+					corMapArray = corMapArray :+ corMap
 				}				
 			}
 		}
-		import sqlContext.implicits._
-		val convertedDF = sc.parallelize(corMap.toSeq).toDF.withColumnRenamed("_1", "Relationship").withColumnRenamed("_2", "Properties")
-		val path = COLUMN_CORRELATION_DEFAULT_PATH + "/" + datasetName
-		scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new org.apache.hadoop.fs.Path(path), true) }
-		convertedDF.repartition(1).write.format("json").save(path)
+		var jsonFileContent = ""
+		corMapArray.foreach(m => jsonFileContent += scala.util.parsing.json.JSONObject(m) + "\n")
+		val correlationOutputPath = new Path(COLUMN_CORRELATION_DEFAULT_PATH + "/" + datasetName + "/output.json")
+		scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(COLUMN_CORRELATION_DEFAULT_PATH + "/" + datasetName), true) }
+		if (jsonFileContent != "") {
+			val fin = fileSystem.create(new Path(COLUMN_CORRELATION_DEFAULT_PATH + "/" + datasetName + "/output.json"))
+			fin.writeBytes(jsonFileContent.dropRight(1))
+			fin.close()			
+		}
 	}
 }

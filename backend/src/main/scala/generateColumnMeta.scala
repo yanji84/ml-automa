@@ -45,7 +45,7 @@ object generateColumnMeta {
 				val datasetLastProcessedTime:Long = Try(fileSystem.getFileStatus(markerPath).getModificationTime()) getOrElse 0
 				// generate column meta on newly updated datasets
 				if (force || datasetLastModifiedTime > datasetLastProcessedTime) {
-					val colMap = extractColumnMeta(dataset.getPath().toString(), sc, sqlContext, fileSystem)
+					val colMap = extractColumnMeta(dataset.getPath().toString, sc, sqlContext, fileSystem)
 					if (!colMap.isEmpty) {
 						val datasetName = dataset.getPath().toString().split("/").last
 						import sqlContext.implicits._
@@ -165,7 +165,7 @@ object generateColumnMeta {
 			correlation.extract(correlationColumns.toList, dataset, datasetName, fileSystem, sc, sqlContext)
 		} else if (correlationColumns.isEmpty) {
 			val path = COLUMN_CORRELATION_DEFAULT_PATH + "/" + datasetName
-			scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(path), true) }
+			Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(path), true) }
 		}
 		return colMap
 	}

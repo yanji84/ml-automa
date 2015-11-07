@@ -36,7 +36,7 @@ object joinInference {
 		val path = new Path(COLUMN_META_DEFAULT_PATH)
 		val markerPath = new Path(COLUMN_META_DEFAULT_PATH + "/_done")
 		val lastProcessedTime:Long = Try(fileSystem.getFileStatus(markerPath).getModificationTime()) getOrElse 0
-		var joinMap:Map[String,Map[String, String]] = Map()
+		var joinMapArray = Array[Map[String, String]]()
 		// infer join on categorical column and normalized columns only
 		var allColumnMetaDF = sqlContext.read.json(COLUMN_META_DEFAULT_PATH + "/*/*")
 		// 1. infer join for non-numeric type categorical column
@@ -55,7 +55,6 @@ object joinInference {
 												 "Properties.bloomFilterNumHashFunctions")
 		val datasets = fileSystem.listStatus(path)
 		var allDatasets = allColumnMetaDF.select("datasetName").distinct.collect().map(d => d(0).toString).toList
-		var inferredDatasets = Array[String]()
 		var selectedDatasets = Array[String]()
 		for(dataset <- datasets) {
 			val datasetLastModifiedTime:Long = dataset.getModificationTime()
@@ -114,16 +113,15 @@ object joinInference {
 									} else if (selectedColumnSpecialType.startsWith("s2cell")) {
 										edgeType = "location"
 									}
-									val edgeKey = selectedDatasetName + ":" + col1 + "-" + restDataset + ":" + col2 + "-" + edgeType
-									joinMap += (edgeKey -> Map("col1" -> col1.toString,
-															   "col2" -> col2.toString,
-															   "dataset1" -> selectedDatasetName,
-															   "dataset2" -> restDataset,
-															   "relationship" -> edgeType,
-															   "value" -> matchRate.toString,
-															   "significant" -> "true",
-															   "significance_level" -> JOIN_INFERENCE_THRESHOLD.toString()))
-
+									val joinMap = Map("col1" -> col1.toString,
+												      "col2" -> col2.toString,
+												      "dataset1" -> selectedDatasetName,
+												      "dataset2" -> restDataset,
+												      "relationship" -> edgeType,
+												      "value" -> matchRate.toString,
+												      "significant" -> "true",
+												      "significance_level" -> JOIN_INFERENCE_THRESHOLD.toString())
+									joinMapArray = joinMapArray :+ joinMap
 								}
 							}
 						}
@@ -132,10 +130,14 @@ object joinInference {
 			}
 			allDatasets = allDatasets diff List(selectedDatasetName)
 		}
-		import sqlContext.implicits._
-		val convertedDF = sc.parallelize(joinMap.toSeq).toDF.withColumnRenamed("_1", "Relationship").withColumnRenamed("_2", "Properties")
-		scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new org.apache.hadoop.fs.Path(COLUMN_JOININFERENCE_PATH), true) }
-		convertedDF.repartition(1).write.format("json").save(COLUMN_JOININFERENCE_PATH)
+		var jsonFileContent = ""
+		joinMapArray.foreach(m => jsonFileContent += scala.util.parsing.json.JSONObject(m) + "\n")
+		Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(COLUMN_JOININFERENCE_PATH), true) }
+		if (jsonFileContent != "") {
+			val fin = fileSystem.create(new Path(COLUMN_JOININFERENCE_PATH + "/output.json"))
+			fin.writeBytes(jsonFileContent.dropRight(1))
+			fin.close()			
+		}
 		// infer join again on updated datasets
 		val markerOutputStream = fileSystem.create(markerPath, true);
 		markerOutputStream.close()
