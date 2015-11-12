@@ -36,19 +36,35 @@ We can also run spark job in the jar file, i.e.
 
 spark-submit --packages com.rubiconproject.oss:jchronic:0.2.6,com.databricks:spark-csv_2.11:1.2.0 --class com.projectx.backend.generateColumnMeta --master spark://node1:7077 --executor-memory 4g --num-executors 5 projectx_2.10-1.0.jar
 
+Hive
+----
+When launching spark with hive support, need to make sure that these jars are on the classpath i.e.
+
+spark-shell --jars /root/spark/lib_managed/jars/datanucleus-api-jdo-3.2.6.jar,/root/spark/lib_managed/jars/datanucleus-core-3.2.10.jar,/root/spark/lib_managed/jars/datanucleus-rdbms-3.2.9.jar,/usr/local/hive/lib/mysql-connector-java-5.1.37-bin.jar
+
+from mysql grant all permission to hiveuser
+GRANT ALL PRIVILEGES ON mydb.* TO 'myuser'@'%' WITH GRANT OPTION;
+
 Job Server
 ---------
-1. add jar
-curl --data-binary @jobserver_2.10-1.0.jar 158.85.79.185:8090/jars/readvisgraph
+docker build -t=jobserver ./
+docker run -d -p 8090:8090 -p 32456-32472:32456-32472 --net=host jobserver
 
-2. pre-create spark context
-curl -d "" '158.85.79.185:8090/contexts/projectx?num-cpu-cores=1&memory-per-node=512m'
+1. delete spark context
+curl -X DELETE 158.85.79.185:8090/contexts/sqlquery
 
-3. run job synchronously
-curl -d "input.visgraph_path=/projectx/output/vis_graph" '158.85.79.185:8090/jobs?appName=readvisgraph&classPath=com.projectx.jobserver.readVisGraph&context=projectx&sync=true'
+2. add jar
+curl --data-binary @jobserver_2.10-1.0.jar 158.85.79.185:8090/jars/jobserver
 
-4. delete spark context
-curl -X DELETE 158.85.79.185:8090/contexts/projectx
+3. pre-create spark context
+curl -d "" '158.85.79.185:8090/contexts/readvisgraph?num-cpu-cores=2&memory-per-node=512m'
+curl -d "" '158.85.79.185:8090/contexts/sqlquery?num-cpu-cores=4&memory-per-node=2g'
+
+4. run job synchronously
+curl -d 'input.sql="SELECT * FROM visGraph"' '158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.sqlRelay&context=sqlquery&sync=true'
+
+5. check job asynchronously
+curl 158.85.79.185:8090/jobs/89bed200-0d6c-4a4e-a5eb-599fddd5c9a7
 
 Elastic Search
 --------------
