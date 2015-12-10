@@ -12,6 +12,7 @@ import spark.jobserver.SparkHiveJob
 import spark.jobserver.SparkSqlJob
 import spark.jobserver.SparkJobValid
 import spark.jobserver.SparkJobInvalid
+import java.net.URLDecoder
 
 /**
 *
@@ -24,12 +25,17 @@ import spark.jobserver.SparkJobInvalid
 
 object sqlRelay extends SparkSqlJob {
 	override def runJob(sc:SQLContext, config: Config): Any = {
-		val input = config.getString("input.sql").split("%7C")
+		val input = URLDecoder.decode(config.getString("input.sql")).split(";")
 		val dataset = input(0)
 		val sqlStatement = input(1)
 		var table = sc.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load("/projectx/datasets/" + dataset + "/*")
 		table.registerTempTable(dataset)
-		sc.sql(sqlStatement).collect
+		val data = sc.sql(sqlStatement).collect
+		var result = "[" + table.columns.mkString(",") + "]"
+		for (r <- data) {
+			result = result + "," + r.toString
+		}
+		result
 	}
 	override def validate(sc:SQLContext, config: Config): spark.jobserver.SparkJobValidation = {
 		Try(config.getString("input.sql")).map(x => SparkJobValid).getOrElse(SparkJobInvalid("No input.sql config param"))

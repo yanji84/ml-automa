@@ -9,6 +9,7 @@ import scala.util.Try
 import spark.jobserver.SparkJob
 import spark.jobserver.SparkJobValid
 import spark.jobserver.SparkJobInvalid
+import java.net.URLDecoder
 
 /**
 *
@@ -62,7 +63,7 @@ object readVisGraph extends SparkJob {
 		val sqlContext = new SQLContext(sc)
 		import sqlContext.implicits._
 		var visGraphDF = sqlContext.read.json("/projectx/output/vis_graph/*")
-		val input = config.getString("input").split("%7C")
+		val input = URLDecoder.decode(config.getString("input")).split(";")
 		val selectedDataset = input(0)
 		val selectedRelationshipType = input(1)
 		if (selectedDataset != "all") {

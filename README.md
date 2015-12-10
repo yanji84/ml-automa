@@ -53,15 +53,16 @@ docker run -d -p 8090:8090 -p 32456-32472:32456-32472 --net=host jobserver
 1. delete spark context
 curl -X DELETE 158.85.79.185:8090/contexts/sqlquery
 
-2. add jar
-curl --data-binary @jobserver_2.10-1.0.jar 158.85.79.185:8090/jars/jobserver
+2. add jar (use the assembly jar with sbt assembly)
+curl --data-binary @Jobserver-assembly-1.0.jar 158.85.79.185:8090/jars/jobserver
 
 3. pre-create spark context
 curl -d "" '158.85.79.185:8090/contexts/readvisgraph?num-cpu-cores=2&memory-per-node=512m'
-curl -d "" '158.85.79.185:8090/contexts/sqlquery?num-cpu-cores=4&memory-per-node=2g'
+curl -d "" '158.85.79.185:8090/contexts/sqlquery?num-cpu-cores=4&memory-per-node=2g&context-factory=spark.jobserver.context.SQLContextFactory'
 
 4. run job synchronously
-curl -d 'input.sql="SELECT * FROM visGraph"' '158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.sqlRelay&context=sqlquery&sync=true'
+curl -d 'input.sql="Crime;SELECT * FROM Crime LIMIT 100"' '158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.sqlRelay&context=sqlquery&sync=true'
+curl -d 'input=all;all' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.readVisGraph&context=readvisgraph&sync=true'
 
 5. check job asynchronously
 curl 158.85.79.185:8090/jobs/89bed200-0d6c-4a4e-a5eb-599fddd5c9a7
