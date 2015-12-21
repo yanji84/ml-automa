@@ -25,12 +25,22 @@ import java.net.URLDecoder
 
 object sqlRelay extends SparkSqlJob {
 	override def runJob(sc:SQLContext, config: Config): Any = {
-		val input = URLDecoder.decode(config.getString("input.sql")).split(";")
-		val dataset = input(0)
-		val sqlStatement = input(1)
+		val input = URLDecoder.decode(URLDecoder.decode(config.getString("input")))
+		// this only supports one FROM keyword in the query for prototype
+		val tokens = input.split(" ")
+		var index = 0
+		var datasetNameIndex = -1
+		for (t <- tokens) {
+			if (t.toLowerCase() == "from") {
+				datasetNameIndex = index + 1
+			}
+			index += 1
+		}
+		val dataset = tokens(datasetNameIndex)
+		val sqlStatement = input
 		var table = sc.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load("/projectx/datasets/" + dataset + "/*")
 		table.registerTempTable(dataset)
-		val data = sc.sql(sqlStatement).collect
+		val data = sc.sql(sqlStatement).toJSON.collect
 		var result = "[" + table.columns.mkString(",") + "]"
 		for (r <- data) {
 			result = result + "," + r.toString
@@ -38,6 +48,6 @@ object sqlRelay extends SparkSqlJob {
 		result
 	}
 	override def validate(sc:SQLContext, config: Config): spark.jobserver.SparkJobValidation = {
-		Try(config.getString("input.sql")).map(x => SparkJobValid).getOrElse(SparkJobInvalid("No input.sql config param"))
+		Try(config.getString("input")).map(x => SparkJobValid).getOrElse(SparkJobInvalid("No input config param"))
 	}
 }

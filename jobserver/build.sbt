@@ -10,6 +10,7 @@ libraryDependencies += "spark.jobserver" %% "job-server-api" % "0.6.0" % "provid
 libraryDependencies += "spark.jobserver" %% "job-server-extras" % "0.6.0" % "provided"
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 libraryDependencies += "org.apache.spark" %% "spark-hive" % "1.5.2" % "provided"
+libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2" % "provided"
 
 resolvers += "Akka Repository" at "http://repo.akka.io/releases/"
 resolvers += "Job Server Bintray" at "https://dl.bintray.com/spark-jobserver/maven"

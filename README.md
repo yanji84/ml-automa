@@ -36,6 +36,12 @@ We can also run spark job in the jar file, i.e.
 
 spark-submit --packages com.rubiconproject.oss:jchronic:0.2.6,com.databricks:spark-csv_2.11:1.2.0 --class com.projectx.backend.generateColumnMeta --master spark://node1:7077 --executor-memory 4g --num-executors 5 projectx_2.10-1.0.jar
 
+Spark Streaming
+---------------
+To start a twitter spark streaming example:
+
+spark-submit --master yarn-client twitter-assembly-0.1.0.jar EBCKtNuL2sXEyqelVwHpDA K9ayEuxwNPQf9hJLqqLxaOutmfOMFqsGKnoO9DsFRtA 19001933-OZaxJudSqXlOS6Jsa1C4RvgGOsqGgUNCaqC8sKCqY yTwvgfHyKVBJtyz8o06mHx0NXnJgqjIBIq930yuA8
+
 Hive
 ----
 When launching spark with hive support, need to make sure that these jars are on the classpath i.e.
@@ -59,13 +65,18 @@ curl --data-binary @Jobserver-assembly-1.0.jar 158.85.79.185:8090/jars/jobserver
 3. pre-create spark context
 curl -d "" '158.85.79.185:8090/contexts/readvisgraph?num-cpu-cores=2&memory-per-node=512m'
 curl -d "" '158.85.79.185:8090/contexts/sqlquery?num-cpu-cores=4&memory-per-node=2g&context-factory=spark.jobserver.context.SQLContextFactory'
+curl -d "" '158.85.79.185:8090/contexts/streamquery?num-cpu-cores=2&memory-per-node=1g&context-factory=spark.jobserver.context.StreamingContextFactory'
+curl -d "" '158.85.79.185:8090/contexts/readstreamresult?num-cpu-cores=1&memory-per-node=128m'
 
 4. run job synchronously
-curl -d 'input.sql="Crime;SELECT * FROM Crime LIMIT 100"' '158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.sqlRelay&context=sqlquery&sync=true'
+curl -d 'input="SELECT * FROM Crime LIMIT 100"' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.sqlRelay&context=sqlquery&sync=true'
 curl -d 'input=all;all' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.readVisGraph&context=readvisgraph&sync=true'
+curl -d '' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.streaming&context=streamquery'
+curl -d '' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.readStreamOutput&context=readstreamresult'
 
 5. check job asynchronously
-curl 158.85.79.185:8090/jobs/89bed200-0d6c-4a4e-a5eb-599fddd5c9a7
+curl -d '' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.streaming&context=streamquery'
+curl 158.85.79.185:8090/jobs/152a26de-5271-458f-9394-e0b8bacf6b1b
 
 Elastic Search
 --------------
