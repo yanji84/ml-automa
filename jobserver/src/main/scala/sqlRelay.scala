@@ -40,11 +40,17 @@ object sqlRelay extends SparkSqlJob {
 		val sqlStatement = input
 		var table = sc.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load("/projectx/datasets/" + dataset + "/*")
 		table.registerTempTable(dataset)
-		val data = sc.sql(sqlStatement).toJSON.collect
-		var result = "[" + table.columns.mkString(",") + "]"
-		for (r <- data) {
-			result = result + "," + r.toString
+		val dataTable = sc.sql(sqlStatement)
+		val data = dataTable.collect
+		var result = "[["
+		for (c <- dataTable.columns) {
+			result = result + "\"" + c + "\","
 		}
+		result = result.dropRight(1) + "],["
+		for (r <- data) {
+			result = result + "[" + r.toSeq.toArray.map(s => "\"" + s + "\"").mkString(",") + "],"
+		}
+		result = result.dropRight(1) + "]]"
 		result
 	}
 	override def validate(sc:SQLContext, config: Config): spark.jobserver.SparkJobValidation = {

@@ -8,6 +8,8 @@ Cluster
 
 HDFS Namenode: http://158.85.79.185:50070/dfshealth.html#tab-overview
 
+HDFS Namenode backup: http://158.85.79.186:50105/explorer.html#/projectx/datasets
+
 HDFS Explorer: http://158.85.79.185:50070/explorer.html#/
 
 Spark Master: http://158.85.79.185:8080/
@@ -46,7 +48,7 @@ Hive
 ----
 When launching spark with hive support, need to make sure that these jars are on the classpath i.e.
 
-spark-shell --jars /root/spark/lib_managed/jars/datanucleus-api-jdo-3.2.6.jar,/root/spark/lib_managed/jars/datanucleus-core-3.2.10.jar,/root/spark/lib_managed/jars/datanucleus-rdbms-3.2.9.jar,/usr/local/hive/lib/mysql-connector-java-5.1.37-bin.jar
+spark-shell --jars /root/spark/lib_managed/jars/datanucleus-api-jdo-3.2.6.jar,/root/spark/lib_managed/jars/datanucleus-core-3.2.10.jar,/root/spark/lib_managed/jars/datanucleus-rdbms-3.2.9.jar,/usr/local/hive/lib/mysql-connector-java-5.1.37-bin.jar --packages com.databricks:spark-csv_2.11:1.2.0
 
 from mysql grant all permission to hiveuser
 GRANT ALL PRIVILEGES ON mydb.* TO 'myuser'@'%' WITH GRANT OPTION;
@@ -63,16 +65,16 @@ curl -X DELETE 158.85.79.185:8090/contexts/sqlquery
 curl --data-binary @Jobserver-assembly-1.0.jar 158.85.79.185:8090/jars/jobserver
 
 3. pre-create spark context
-curl -d "" '158.85.79.185:8090/contexts/readvisgraph?num-cpu-cores=2&memory-per-node=512m'
+curl -d "" '158.85.79.185:8090/contexts/readvisgraph?num-cpu-cores=1&memory-per-node=128m'
+curl -d "" '158.85.79.185:8090/contexts/readstreamresult?num-cpu-cores=1&memory-per-node=128m'
 curl -d "" '158.85.79.185:8090/contexts/sqlquery?num-cpu-cores=4&memory-per-node=2g&context-factory=spark.jobserver.context.SQLContextFactory'
 curl -d "" '158.85.79.185:8090/contexts/streamquery?num-cpu-cores=2&memory-per-node=1g&context-factory=spark.jobserver.context.StreamingContextFactory'
-curl -d "" '158.85.79.185:8090/contexts/readstreamresult?num-cpu-cores=1&memory-per-node=128m'
 
 4. run job synchronously
-curl -d 'input="SELECT * FROM Crime LIMIT 100"' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.sqlRelay&context=sqlquery&sync=true'
+curl -d 'input="SELECT Category, COUNT(*) FROM Crime GROUP BY Category"' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.sqlRelay&context=sqlquery&sync=true'
 curl -d 'input=all;all' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.readVisGraph&context=readvisgraph&sync=true'
 curl -d '' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.streaming&context=streamquery'
-curl -d '' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.readStreamOutput&context=readstreamresult'
+curl -d '' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.readStreamOutput&context=readstreamresult&sync=true'
 
 5. check job asynchronously
 curl -d '' '158.85.79.185:1337/158.85.79.185:8090/jobs?appName=jobserver&classPath=com.projectx.jobserver.streaming&context=streamquery'
