@@ -10,21 +10,22 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.functions._
 import scala.util.control.Exception
 import scala.util.Try
+import java.io.ObjectInputStream
 
 /**
 *
-* File Name: generateColumnMeta.scala
+* File Name: generateSparkMLCode.scala
 * Date: Feb 11, 2016
 * Author: Ji Yan
 *
-* Spark job to generate ML model code in spark
+* job to generate all Spark ML models
 *
 */
 
-object sparkMLCodegen {
+object generateSparkMLCode {
 	val config = ConfigFactory.load()
 	def main(args: Array[String]) {
-		val conf = new SparkConf().setAppName("cleanData")
+		val conf = new SparkConf().setAppName("generateSparkMLCode")
 		val sc = new SparkContext(conf)
 		val sqlContext = new SQLContext(sc)
 
@@ -43,7 +44,12 @@ object sparkMLCodegen {
 		val fileSystem = org.apache.hadoop.fs.FileSystem.get(new java.net.URI(HDFS_URI), sc.hadoopConfiguration)
 		val path = new Path(DATASET_DEFAULT_PATH)
 		val datasets = fileSystem.listStatus(path)
-		var colMap:Map[String,Array[Map[String, String]]] = Map()
+		val in = fileSystem.open(new Path(COLUMN_META_DEFAULT_PATH + "/colmap"))
+		val ois = new ObjectInputStream(in)
+		val obj = ois.readObject
+		var colMap:Map[String,Array[Map[String, String]]] = obj.asInstanceOf[Map[String,Array[Map[String, String]]]]
+		ois.close()
+		in.close()
 		var mainDatasetColMap:Map[String, Map[String, String]] = Map()
 		var mainDataset = "train"
 		var mainIdField = ""
@@ -55,9 +61,6 @@ object sparkMLCodegen {
 				mainDataset = datasetName
 				mainDatasetPath = dataset.getPath.toString
 			} 
-			Exception.ignoring(classOf[org.apache.hadoop.mapred.InvalidInputException]) {
-				colMap = colMap ++ extractColumnMeta(dataset.getPath().toString, sc, sqlContext, fileSystem)
-			}
 		}
 
 		for (c <- colMap(mainDataset)) {
@@ -76,14 +79,6 @@ object sparkMLCodegen {
 				featureColType = c("columnType")
 			}
 		}
-
-		/*
-		import sqlContext.implicits._
-		val colPropDF = sc.parallelize(colMap.toSeq).toDF.withColumnRenamed("_1", "Colume").withColumnRenamed("_2", "Properties")
-		val colPropPath = COLUMN_META_DEFAULT_PATH
-		Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(colPropPath), true) }
-		colPropDF.repartition(1).write.format("json").save(colPropPath)				
-		*/
 
 		for (m <- colMap(mainDataset)) {
 			mainDatasetColMap += (m("columnName") -> m)
@@ -179,60 +174,8 @@ object sparkMLCodegen {
 		codeGen.trainModel()
 		
 		print("codeGen:" + codeGen.getCodeGen)
-
+		codeGen.writeToFile
 		//val codeCompiler = new compiler(None)
-		//codeCompiler.eval[Unit](codeGen)
-	}
-
-	def extractColumnMeta(dataPath:String, sc:SparkContext,sqlContext:SQLContext, fileSystem:org.apache.hadoop.fs.FileSystem) : Map[String,Array[Map[String, String]]] = {
-		val CATEGORICAL_COLUMN_THRESHOLD = config.getDouble("projectx.backend.threshold.categorical_column_ratio")
-		var colMap:Map[String,Array[Map[String, String]]] = Map()
-		val datasetName = dataPath.split("/").last
-		var dataset = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load(dataPath)
-		// cache to speed up per column access later
-		dataset.cache
-		var columnTypes = dataset.dtypes
-		var columns = dataset.columns
-		var rowCount = dataset.count + 0.0
-		var foundId = false
-		for (columnName <- columns) {
-			var idField = "false"
-			var categorical = "true"
-			val columnIndex:Integer = columns.indexOf(columnName)
-			val columnType = columnTypes(columnIndex)._2
-			// embarassingly simple heuristic to determine if a field is id field
-			// just look for the first column whose name ends with id
-			if (columnName.toLowerCase.endsWith("id") && !foundId) {
-				foundId = true;
-				idField = "true";
-			}
-			Exception.ignoring(classOf[org.apache.spark.sql.AnalysisException]) {
-				var propMap = Map[String, String]()
-				val colKey = datasetName
-				val unique = dataset.select(columnName).distinct.count + 0.0
-				// check if column is categorical/nominal
-				val uniqueRatio = unique / rowCount
-				if (uniqueRatio >= CATEGORICAL_COLUMN_THRESHOLD) {
-					categorical = "false"
-				}
-				propMap += ("categorical" -> categorical,
-							"unique" -> unique.toString,
-							"uniqueRatio" -> uniqueRatio.toString,
-							"columnType" -> columnType,
-							"datasetName" -> datasetName,
-							"columnName" -> columnName,
-							"idField" -> idField)
-
-				if (colMap.contains(colKey)) {
-					val newArr = colMap(colKey) :+ propMap
-					colMap += (colKey -> newArr)
-				} else {
-					var colMapArray = Array[Map[String, String]]()
-					colMapArray = colMapArray :+ propMap
-					colMap += (colKey -> colMapArray)
-				}
-			}
-		}
-		return colMap
+		//codeCompiler.eval[Unit](codeGen.getCodeGen)
 	}
 }

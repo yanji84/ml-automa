@@ -6,6 +6,8 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
 import org.apache.commons.codec.binary.Base64
 import java.util.BitSet
+import java.util.UUID
+import java.io._
 
 /**
 *
@@ -33,9 +35,9 @@ object codeGen {
 		codeGen += "import org.apache.spark.ml.feature.StringIndexer\n"
 		codeGen += "import org.apache.spark.ml.feature.OneHotEncoder\n"
 		codeGen += "import org.apache.spark.ml.classification.DecisionTreeClassifier\n"
-		codeGen += "import org.apache.spark.ml.classification.{RandomForestClassificationModel, RandomForestClassifier}"
-		codeGen += "import org.apache.spark.ml.classification.{GBTClassificationModel, GBTClassifier}"
-		codeGen += "import org.apache.spark.ml.classification.MultilayerPerceptronClassifier"
+		codeGen += "import org.apache.spark.ml.classification.{RandomForestClassificationModel, RandomForestClassifier}\n"
+		codeGen += "import org.apache.spark.ml.classification.{GBTClassificationModel, GBTClassifier}\n"
+		codeGen += "import org.apache.spark.ml.classification.MultilayerPerceptronClassifier\n"
 		codeGen += "import org.apache.spark.mllib.linalg.{Vector, Vectors}\n"
 		codeGen += "import org.apache.spark.sql.Row\n"
 		codeGen += "import org.apache.spark.mllib.evaluation.RankingMetrics\n"
@@ -43,7 +45,7 @@ object codeGen {
 		codeGen += "import org.apache.spark.SparkContext\n"
 		codeGen += "import org.apache.spark.SparkContext._\n"
 		codeGen += "import org.apache.spark.SparkConf\n"
-		codeGen += "import org.apache.spark.sql.SQLContext"
+		codeGen += "import org.apache.spark.sql.SQLContext\n"
 		codeGen += "import org.apache.spark.sql.functions._\n"
 	}
 
@@ -63,12 +65,12 @@ object codeGen {
 	def groupDataFrame(measureFields: String, groupByFields: String, name: String, register: Boolean) : Unit = {
 		codeGen += s"""val grouped = sqlContext.sql("select $measureFields $groupByFields from $name group by $groupByFields")\n"""
 		if (register) {
-			codeGen += s"grouped.registerTempTable(" + """"grouped")\n"""
+			codeGen += "grouped.registerTempTable(" + s""""grouped")\n"""
 		}
 	}
 
 	def joinDataFrame(mainDsName: String, mainId: String, id:String, cache: Boolean) : Unit = {
-		codeGen = s"""var joinedMainDataset = sqlContext.sql("select * from $mainDsName left join grouped on $mainDsName.$mainId = grouped.$id")\n"""
+		codeGen += s"""var joinedMainDataset = sqlContext.sql("select * from $mainDsName left join grouped on $mainDsName.$mainId = grouped.$id")\n"""
 		if (cache) {
 			codeGen += "joinedMainDataset.cache\n"
 		}
@@ -131,5 +133,13 @@ object codeGen {
 
 	def trainModel() : Unit = {
 		codeGen += s"val trainedModel = pipeline.fit(trainingData)\n"
+	}
+
+	def writeToFile() : Unit = {
+		val fileName = UUID.randomUUID
+		val file = new File(fileName.toString)
+		val bw = new BufferedWriter(new FileWriter(file))
+		bw.write(codeGen)
+		bw.close()
 	}
 }
