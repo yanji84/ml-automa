@@ -175,7 +175,5 @@ object generateSparkMLCode {
 		
 		print("codeGen:" + codeGen.getCodeGen)
 		codeGen.writeToFile
-		//val codeCompiler = new compiler(None)
-		//codeCompiler.eval[Unit](codeGen.getCodeGen)
 	}
 }

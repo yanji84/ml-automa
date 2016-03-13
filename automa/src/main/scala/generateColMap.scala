@@ -11,10 +11,11 @@ import org.apache.spark.sql.functions._
 import scala.util.control.Exception
 import scala.util.Try
 import java.io.ObjectOutputStream
+import com.projectx.automa.inference._
 
 /**
 *
-* File Name: generateColMap.scala
+* File Name: GenerateColMap.scala
 * Date: Feb 11, 2016
 * Author: Ji Yan
 *
@@ -22,8 +23,9 @@ import java.io.ObjectOutputStream
 *
 */
 
-object generateColMap {
+object GenerateColMap {
 	val config = ConfigFactory.load()
+	val inferences = List[Inference](new Categorical, new Null)
 	def main(args: Array[String]) {
 		val conf = new SparkConf().setAppName("generateColMap")
 		val sc = new SparkContext(conf)
@@ -52,51 +54,32 @@ object generateColMap {
 
 	def extractColumnMeta(dataPath:String, sc:SparkContext,sqlContext:SQLContext, fileSystem:org.apache.hadoop.fs.FileSystem) : Map[String,Array[Map[String, String]]] = {
 		val CATEGORICAL_COLUMN_THRESHOLD = config.getDouble("projectx.backend.threshold.categorical_column_ratio")
-		var colMap:Map[String,Array[Map[String, String]]] = Map()
+		var colMap:Map[String,List[Map[String, Any]]] = Map()
 		val datasetName = dataPath.split("/").last
 		var dataset = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load(dataPath)
 		// cache to speed up per column access later
 		dataset.cache
 		var columnTypes = dataset.dtypes
 		var columns = dataset.columns
-		var rowCount = dataset.count + 0.0
-		var foundId = false
 		for (columnName <- columns) {
-			var idField = "false"
-			var categorical = "true"
 			val columnIndex:Integer = columns.indexOf(columnName)
 			val columnType = columnTypes(columnIndex)._2
-			// embarassingly simple heuristic to determine if a field is id field
-			// just look for the first column whose name ends with id
-			if (columnName.toLowerCase.endsWith("id") && !foundId) {
-				foundId = true
-				idField = "true"
+			var propMap = Map[String, Any]()
+			propMap += ("columnType" -> columnType,
+						"datasetName" -> datasetName,
+						"columnName" -> columnName)
+			for (inference <- inferences) {
+				inference.inferColumn(dataset.select(columnName), propMap)
 			}
-			Exception.ignoring(classOf[org.apache.spark.sql.AnalysisException]) {
-				var propMap = Map[String, String]()
-				val colKey = datasetName
-				val unique = dataset.select(columnName).distinct.count + 0.0
-				// check if column is categorical/nominal
-				val uniqueRatio = unique / rowCount
-				if (uniqueRatio >= CATEGORICAL_COLUMN_THRESHOLD) {
-					categorical = "false"
-				}
-				propMap += ("categorical" -> categorical,
-							"unique" -> unique.toString,
-							"uniqueRatio" -> uniqueRatio.toString,
-							"columnType" -> columnType,
-							"datasetName" -> datasetName,
-							"columnName" -> columnName,
-							"idField" -> idField)
 
-				if (colMap.contains(colKey)) {
-					val newArr = colMap(colKey) :+ propMap
-					colMap += (colKey -> newArr)
-				} else {
-					var colMapArray = Array[Map[String, String]]()
-					colMapArray = colMapArray :+ propMap
-					colMap += (colKey -> colMapArray)
-				}
+			val colKey = datasetName
+			if (colMap.contains(colKey)) {
+				val newArr = colMap(colKey) :: propMap
+				colMap += (colKey -> newArr)
+			} else {
+				var colMapList = List[Map[String, Any]]()
+				colMapList = colMapList :: propMap
+				colMap += (colKey -> colMapList)
 			}
 		}
 		return colMap
