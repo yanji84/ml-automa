@@ -1,5 +1,5 @@
 package com.projectx.automa.plan.step
-
+import com.projectx.automa.plan._
 /**
 *
 * File Name: RemoveNull.scala
@@ -10,7 +10,7 @@ package com.projectx.automa.plan.step
 */
 
 class RemoveNull extends FTStep {
-	override def check(plan:Plan, executionContext:ExecutionContext) : Boolean = {
-		return executionContext.columnMetaMap[executionContext.mainDatasetName].filter(_("containsNull")).count > 0
+	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
+		return executionContext.columnMetaMap(executionContext.mainDatasetName).filter(_("hasNull").asInstanceOf[Boolean]).length > 0
 	}
 }

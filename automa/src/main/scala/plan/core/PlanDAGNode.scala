@@ -1,6 +1,7 @@
 package com.projectx.automa.plan
 
 import com.projectx.automa.plan.step.Step
+import scala.collection.mutable.ListBuffer
 
 /**
 *
@@ -12,9 +13,9 @@ import com.projectx.automa.plan.step.Step
 */
 
 case class PlanDAGNode (step:Step) {
-	var _children:List[PlanDAGNode] = List[PlanDAGNode]()
-	def children = _children
+	var _children = ListBuffer[PlanDAGNode]()
+	def children = _children.toList
 	def addChild(c:PlanDAGNode) : Unit = {
-		_children = _children :: c
+		_children += c
 	}
 }

@@ -1,6 +1,7 @@
 package com.projectx.automa.plan
 
 import com.projectx.automa.plan.step.Step
+import scala.collection.mutable.ListBuffer
 
 /**
 *
@@ -12,38 +13,39 @@ import com.projectx.automa.plan.step.Step
 */
 
 class Plan {
-	var _root:PlanDAGNode
-	var _leafNodes:List[PlanDAGNode] = List[PlanDAGNode]()
-	def root() = _root
-	def leafNodes() = _leafNodes
+	var _root:Option[PlanDAGNode] = None
+	var _leafNodes = ListBuffer[PlanDAGNode]()
+	def root() = _root.get
+	def leafNodes() = _leafNodes.toList
 
 	def addStepNode(newNode:PlanDAGNode, parentNode:PlanDAGNode) : Unit = {
 		parentNode.addChild(newNode)
-		_leafNodes = (_leafNodes :: newNode).filter(_ != parentNode)
+		_leafNodes += newNode
+		_leafNodes -= parentNode
 	}
 
 	def addStepNode(newNode:PlanDAGNode) : Unit = {
-		_root = newNode
-		_leafNodes = _leafNodes :: newNode
+		_root = Some(newNode)
+		_leafNodes += newNode
 	}
 
 	def serializePlan() : List[List[Step]] = {
-		serializePlan(_root)
+		serializePlan(_root.get).toList.map(_.toList)
 	}
 
-	private def serializePlan(root:PlanDAGNode) : List[List[Step]] = {
-		var allPlans:List[List[Step]]
+	private def serializePlan(root:PlanDAGNode) : ListBuffer[ListBuffer[Step]] = {
+		var allPlans = ListBuffer[ListBuffer[Step]]()
 
 		if (root.children.length == 0) {
-			allPlans = new List{new List{root.step}}
+			allPlans(0) += root.step
 		} else {
 			for (childNode <- root.children) {
 				for (onePlan <- serializePlan(childNode)) {
-					allPlans = allPlans :: (root.step :: onePlan)
+					onePlan.insert(0, root.step)
+					allPlans += onePlan
 				}
 			}
 		}
-
 		allPlans
 	}
 }

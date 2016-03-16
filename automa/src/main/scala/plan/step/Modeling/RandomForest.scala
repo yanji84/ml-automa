@@ -1,5 +1,5 @@
 package com.projectx.automa.plan.step
-
+import com.projectx.automa.plan._
 /**
 *
 * File Name: RandomForest.scala
@@ -10,7 +10,7 @@ package com.projectx.automa.plan.step
 */
 
 class RandomForest extends ModelStep {
-	override def check(plan:Plan, executionContext:ExecutionContext) : Boolean = {
-		return executionContext.columnMetaMap[executionContext.mainDatasetName].filter(_("categorical") && _("label")).count > 0
+	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
+		return executionContext.columnMetaMap(executionContext.mainDatasetName).filter(columnMap => columnMap("categorical").asInstanceOf[Boolean] && columnMap("label").asInstanceOf[Boolean]).length > 0
 	}
 }

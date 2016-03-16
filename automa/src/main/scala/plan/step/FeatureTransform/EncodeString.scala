@@ -1,5 +1,5 @@
 package com.projectx.automa.plan.step
-
+import com.projectx.automa.plan._
 /**
 *
 * File Name: EncodeString.scala
@@ -10,7 +10,7 @@ package com.projectx.automa.plan.step
 */
 
 class EncodeString extends FTStep {
-	override def check(plan:Plan, executionContext:ExecutionContext) : Boolean = {
-		return executionContext.columnMetaMap[executionContext.mainDatasetName].filter(_("columnType") == "StringType").count > 0
+	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
+		return executionContext.columnMetaMap(executionContext.mainDatasetName).filter((columnMap:Map[String, Any]) => columnMap("columnType") == "StringType").length > 0
 	}
 }

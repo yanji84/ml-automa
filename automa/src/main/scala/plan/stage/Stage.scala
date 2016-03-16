@@ -11,6 +11,6 @@ import com.projectx.automa.plan.Plan
 *
 */
 
-class Stage {
+abstract class Stage {
 	def buildPlan(plan:Plan, executionContext:PlanExecutionContext)
 }

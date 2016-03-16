@@ -12,8 +12,6 @@ import com.projectx.automa.plan.step.Step
 * base class for strategy on how to put steps together into a stage plan
 */
 
-class Strategy {
-	def addStepToPlan(step:Step, plan:Plan) : Unit = {
-
-	}
+abstract class Strategy {
+	def addStepToPlan(step:Step, plan:Plan) : Unit
 }

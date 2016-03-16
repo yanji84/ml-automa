@@ -12,6 +12,8 @@ import scala.util.control.Exception
 import scala.util.Try
 import java.io.ObjectOutputStream
 import com.projectx.automa.inference._
+import scala.collection.mutable.Map
+import scala.collection.mutable.ListBuffer
 
 /**
 *
@@ -25,9 +27,9 @@ import com.projectx.automa.inference._
 
 object GenerateColMap {
 	val config = ConfigFactory.load()
-	val inferences = List[Inference](new Categorical, new Null)
+	val inferences = List[Inference](new Categorical(), new Null())
 	def main(args: Array[String]) {
-		val conf = new SparkConf().setAppName("generateColMap")
+		val conf = new SparkConf().setAppName("GenerateColMap")
 		val sc = new SparkContext(conf)
 		val sqlContext = new SQLContext(sc)
 
@@ -38,10 +40,10 @@ object GenerateColMap {
 		val fileSystem = org.apache.hadoop.fs.FileSystem.get(new java.net.URI(HDFS_URI), sc.hadoopConfiguration)
 		val path = new Path(DATASET_DEFAULT_PATH)
 		val datasets = fileSystem.listStatus(path)
-		var colMap:Map[String,Array[Map[String, String]]] = Map()
+		var colMap = Map[String,List[Map[String, Any]]]()
 		for(dataset <- datasets) {
 			Exception.ignoring(classOf[org.apache.hadoop.mapred.InvalidInputException]) {
-				colMap = colMap ++ extractColumnMeta(dataset.getPath().toString, sc, sqlContext, fileSystem)
+				colMap += (dataset.toString -> extractColumnMeta(dataset.getPath().toString, sqlContext))
 			}
 		}
 		scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(COLUMN_META_DEFAULT_PATH + "/colmap"), true) }
@@ -52,9 +54,8 @@ object GenerateColMap {
 		markerOutputStream.close()
 	}
 
-	def extractColumnMeta(dataPath:String, sc:SparkContext,sqlContext:SQLContext, fileSystem:org.apache.hadoop.fs.FileSystem) : Map[String,Array[Map[String, String]]] = {
-		val CATEGORICAL_COLUMN_THRESHOLD = config.getDouble("projectx.backend.threshold.categorical_column_ratio")
-		var colMap:Map[String,List[Map[String, Any]]] = Map()
+	def extractColumnMeta(dataPath:String, sqlContext:SQLContext) : List[Map[String,Any]] = {
+		var columnMetaList = ListBuffer[Map[String,Any]]()
 		val datasetName = dataPath.split("/").last
 		var dataset = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load(dataPath)
 		// cache to speed up per column access later
@@ -62,26 +63,17 @@ object GenerateColMap {
 		var columnTypes = dataset.dtypes
 		var columns = dataset.columns
 		for (columnName <- columns) {
+			var columnMeta = Map[String, Any]()
 			val columnIndex:Integer = columns.indexOf(columnName)
 			val columnType = columnTypes(columnIndex)._2
-			var propMap = Map[String, Any]()
-			propMap += ("columnType" -> columnType,
-						"datasetName" -> datasetName,
-						"columnName" -> columnName)
+			columnMeta += ("columnType" -> columnType,
+						   "datasetName" -> datasetName,
+						   "columnName" -> columnName)
 			for (inference <- inferences) {
-				inference.inferColumn(dataset.select(columnName), propMap)
+				inference.inferColumn(dataset.select(columnName), columnMeta)
 			}
-
-			val colKey = datasetName
-			if (colMap.contains(colKey)) {
-				val newArr = colMap(colKey) :: propMap
-				colMap += (colKey -> newArr)
-			} else {
-				var colMapList = List[Map[String, Any]]()
-				colMapList = colMapList :: propMap
-				colMap += (colKey -> colMapList)
-			}
+			columnMetaList += columnMeta
 		}
-		return colMap
+		columnMetaList.toList
 	}
 }

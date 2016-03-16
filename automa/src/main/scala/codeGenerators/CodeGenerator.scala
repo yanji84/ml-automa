@@ -1,5 +1,6 @@
 package com.projectx.automa.codeGenerator
-
+import com.projectx.automa.plan._
+import com.projectx.automa.plan.step._
 /**
 *
 * File Name: CodeGenerator.scala
@@ -9,8 +10,6 @@ package com.projectx.automa.codeGenerator
 * base class for all code generators
 */
 
-class CodeGenerator {
-	def generateCode(plan:List[Step]) : String = {
-
-	}
+abstract class CodeGenerator {
+	def generateCode(plan:List[Step], context:PlanExecutionContext) : String
 }

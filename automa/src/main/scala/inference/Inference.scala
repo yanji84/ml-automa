@@ -1,6 +1,7 @@
 package com.projectx.automa.inference
 
 import org.apache.spark.sql.DataFrame
+import scala.collection.mutable.Map
 
 /**
 *
@@ -13,6 +14,6 @@ import org.apache.spark.sql.DataFrame
 
 class Inference {
 	def inferColumn(columnDf:DataFrame, columnMap:Map[String, Any]) : Unit = {
-		
+
 	}
 }

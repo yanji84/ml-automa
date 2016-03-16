@@ -14,11 +14,11 @@ import com.projectx.automa.plan.step._
 */
 
 class ModelStage extends Stage {
-	val modelSteps:List[ModelStep] = {new LogisticsRegression, new RandomForest}
+	val modelSteps = List[ModelStep](new LogisticsRegression(), new RandomForest())
 	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext):Unit = {
 		val strategy:Parallel = new Parallel
 
-		for (val modelStep <- modelSteps) {
+		for (modelStep <- modelSteps) {
 			if (modelStep.check(plan, executionContext)) {
 				strategy.addStepToPlan(modelStep, plan)
 			}

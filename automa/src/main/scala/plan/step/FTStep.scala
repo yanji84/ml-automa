@@ -1,5 +1,5 @@
 package com.projectx.automa.plan.step
-
+import com.projectx.automa.plan._
 /**
 *
 * File Name: FTStep.scala
@@ -10,4 +10,7 @@ package com.projectx.automa.plan.step
 */
 
 class FTStep extends Step {
+	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
+		true
+	}
 }

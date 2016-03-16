@@ -1,5 +1,5 @@
 package com.projectx.automa.plan.step
-
+import com.projectx.automa.plan._
 /**
 *
 * File Name: Step.scala
@@ -9,8 +9,6 @@ package com.projectx.automa.plan.step
 * base class for all steps. step is the smallest unit of action in an automation plan
 */
 
-class Step {
-	def check(plan:Plan, executionContext:ExecutionContext) : Boolean = {
-
-	}
+abstract class Step {
+	def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean
 }

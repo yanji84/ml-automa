@@ -10,9 +10,9 @@ import org.apache.spark.SparkContext
 *
 */
 
-case class PlanExecutionContext (sparkContext:SparkContext,
-								 sqlContext:SqlContext,
-								 label:String,
-								 mainDatasetName:String,
-								 columnMetaMap:Map[String,Array[Map[String, String]]],
+case class PlanExecutionContext (val sparkContext:SparkContext,
+								 val sqlContext:SQLContext,
+								 val label:String,
+								 val mainDatasetName:String,
+								 columnMetaMap:Map[String,List[Map[String, Any]]],
 								 datasetMap:Map[String, String])

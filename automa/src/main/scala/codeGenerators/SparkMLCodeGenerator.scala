@@ -1,5 +1,6 @@
 package com.projectx.automa.codeGenerator
-
+import com.projectx.automa.plan._
+import com.projectx.automa.plan.step._
 /**
 *
 * File Name: SparkMLCodeGenerator.scala
@@ -9,6 +10,8 @@ package com.projectx.automa.codeGenerator
 * Spark ML code generators
 */
 
-class SparkMLCodeGenerator {
-
+class SparkMLCodeGenerator extends CodeGenerator {
+	override def generateCode(plan:List[Step], context:PlanExecutionContext) : String = {
+		""
+	}
 }

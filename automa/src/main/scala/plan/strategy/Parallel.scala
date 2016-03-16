@@ -13,13 +13,13 @@ import com.projectx.automa.plan.PlanDAGNode
 */
 
 class Parallel extends Strategy {
-	var leafNodesBeforeAdded:List[PlanDAGNode]
+	var leafNodesBeforeAdded:Option[List[PlanDAGNode]] = None
 	override def addStepToPlan(step:Step, plan:Plan) : Unit = {
 		val newNode = PlanDAGNode(step)
-		if (leafNodesBeforeAdded == null) {
-			leafNodesBeforeAdded = plan.getLeafNodes
+		if (leafNodesBeforeAdded.isEmpty) {
+			leafNodesBeforeAdded = Some(plan.leafNodes)
 		}
-		for (parentNode <- leafNodesBeforeAdded) {
+		for (parentNode <- leafNodesBeforeAdded.get) {
 			plan.addStepNode(newNode, parentNode)
 		}
 	}

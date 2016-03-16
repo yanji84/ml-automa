@@ -15,11 +15,11 @@ import com.projectx.automa.plan.step._
 */
 
 class FTStage extends Stage {
-	val featureTransformSteps:List[FTStep] = {new RemoveNull, new EncodeString}
+	val featureTransformSteps = List[FTStep](new RemoveNull(), new EncodeString())
 	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext):Unit = {
 		val strategy = new Sequential
 
-		for (val ftStep <- featureTransformSteps) {
+		for (ftStep <- featureTransformSteps) {
 			if (ftStep.check(plan, executionContext)) {
 				strategy.addStepToPlan(ftStep, plan)
 			}
