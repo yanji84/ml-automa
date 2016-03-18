@@ -11,10 +11,14 @@ import scala.collection.mutable.Map
 */
 
 class Categorical extends Inference {
-	override def inferColumn(columnDf:DataFrame, columnMap:Map[String, Any]) : Unit = {
+	override def inferColumn(dataDF:DataFrame, columnDf:DataFrame, columnMap:Map[String, Any]) : Unit = {
 		val total = columnDf.count + 0.0
 		val unique = columnDf.distinct.count + 0.0
 		val uniqueRatio = unique / total
-		columnMap += ("categorical" -> (1 - uniqueRatio))
+		columnMap += (InferenceType.CATEGORICAL.toString -> (1 - uniqueRatio))
+	}
+
+	override def inferType() : InferenceType.Value = {
+		InferenceType.CATEGORICAL
 	}
 }

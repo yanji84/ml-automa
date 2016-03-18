@@ -9,8 +9,6 @@ import com.projectx.automa.plan._
 * base class for all feature engineering steps
 */
 
-class FEStep extends Step {
-	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
-		true
-	}
+abstract class FEStep extends Step {
+	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean
 }

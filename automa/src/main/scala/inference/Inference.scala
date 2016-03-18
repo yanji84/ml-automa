@@ -12,8 +12,14 @@ import scala.collection.mutable.Map
 * base class for all column inferences
 */
 
-class Inference {
-	def inferColumn(columnDf:DataFrame, columnMap:Map[String, Any]) : Unit = {
+object InferenceType extends Enumeration {
+	type InferenceType = Value
+	val CATEGORICAL = Value("CATEGORICAL")
+	val NULL = Value("NULL")
+	// add new column inference methods here
+}
 
-	}
+abstract class Inference {
+	def inferColumn(dataDF:DataFrame, columnDf:DataFrame, columnMap:Map[String, Any])
+	def inferType() : InferenceType.Value
 }

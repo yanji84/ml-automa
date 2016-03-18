@@ -1,6 +1,7 @@
 package com.projectx.automa.inference
 import org.apache.spark.sql.DataFrame
 import scala.collection.mutable.Map
+
 /**
 *
 * File Name: Null.scala
@@ -10,13 +11,17 @@ import scala.collection.mutable.Map
 */
 
 class Null extends Inference {
-	override def inferColumn(columnDf:DataFrame, columnMap:Map[String, Any]) : Unit = {
+	override def inferColumn(dataDF:DataFrame, columnDf:DataFrame, columnMap:Map[String, Any]) : Unit = {
 		val noneNullCount = columnDf.filter(columnDf(columnDf.columns(0)).isNotNull).count + 0.0
 		val total = columnDf.count + 0.0
 		if (noneNullCount == total) {
-			columnMap += ("hasNull" -> false)
+			columnMap += (InferenceType.NULL.toString -> false)
 		} else {
-			columnMap += ("categorical" -> true)
+			columnMap += (InferenceType.NULL.toString -> true)
 		}
+	}
+
+	override def inferType() : InferenceType.Value = {
+		InferenceType.NULL
 	}
 }

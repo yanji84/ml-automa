@@ -10,6 +10,8 @@ import com.projectx.automa.plan.PlanDAGNode
 * Date: Feb 19, 2016
 * Author: Ji Yan
 *
+* Parallel strategy adds step to plan as sibling of one another
+*
 */
 
 class Parallel extends Strategy {
@@ -19,8 +21,12 @@ class Parallel extends Strategy {
 		if (leafNodesBeforeAdded.isEmpty) {
 			leafNodesBeforeAdded = Some(plan.leafNodes)
 		}
-		for (parentNode <- leafNodesBeforeAdded.get) {
-			plan.addStepNode(newNode, parentNode)
+		if (leafNodesBeforeAdded.get.length > 0) {
+			for (parentNode <- leafNodesBeforeAdded.get) {
+				plan.addStepNode(newNode, parentNode)
+			}
+		} else {
+			plan.addStepNode(newNode)
 		}
 	}
 }

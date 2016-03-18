@@ -11,6 +11,6 @@ import com.projectx.automa.plan._
 
 class LogisticsRegression extends ModelStep {
 	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
-		return executionContext.columnMetaMap(executionContext.mainDatasetName).filter(columnMap => !columnMap("categorical").asInstanceOf[Boolean] && columnMap("label").asInstanceOf[Boolean]).length > 0
+		return executionContext.columnMap(executionContext.mainDatasetName).filter(columnMap => !columnMap("categorical").asInstanceOf[Boolean] && columnMap("label").asInstanceOf[Boolean]).length > 0
 	}	
 }

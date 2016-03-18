@@ -10,6 +10,8 @@ import com.projectx.automa.plan.PlanDAGNode
 * Date: Feb 19, 2016
 * Author: Ji Yan
 *
+* Sequential strategy adds step to plan as child of one another
+*
 */
 
 class Sequential extends Strategy {

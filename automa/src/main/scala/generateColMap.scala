@@ -21,41 +21,47 @@ import scala.collection.mutable.ListBuffer
 * Date: Feb 11, 2016
 * Author: Ji Yan
 *
-* Spark job to generate column map
+* Spark job to generate column map ( pre-calculated statistics on per column basis )
 *
 */
 
 object GenerateColMap {
 	val config = ConfigFactory.load()
-	val inferences = List[Inference](new Categorical(), new Null())
+	val inferences = List[Inference](new Categorical(),
+								     new Null())
 	def main(args: Array[String]) {
 		val conf = new SparkConf().setAppName("GenerateColMap")
 		val sc = new SparkContext(conf)
 		val sqlContext = new SQLContext(sc)
 
-		val HDFS_URI = config.getString("projectx.backend.filesystem.hdfs")
-		val DATASET_DEFAULT_PATH = config.getString("projectx.backend.filesystem.path.dataset")
-		val COLUMN_META_DEFAULT_PATH = config.getString("projectx.backend.filesystem.path.column_meta")
 		// load each imported dataset
-		val fileSystem = org.apache.hadoop.fs.FileSystem.get(new java.net.URI(HDFS_URI), sc.hadoopConfiguration)
-		val path = new Path(DATASET_DEFAULT_PATH)
+		val fileSystem = org.apache.hadoop.fs.FileSystem.get(new java.net.URI(config.getString("projectx.backend.filesystem.hdfs")), sc.hadoopConfiguration)
+		val path = new Path(config.getString("projectx.backend.filesystem.path.dataset"))
 		val datasets = fileSystem.listStatus(path)
-		var colMap = Map[String,List[Map[String, Any]]]()
+
+		// create column map
+		var colMap = Map[String,List[scala.collection.immutable.Map[String, Any]]]()
 		for(dataset <- datasets) {
-			Exception.ignoring(classOf[org.apache.hadoop.mapred.InvalidInputException]) {
-				colMap += (dataset.toString -> extractColumnMeta(dataset.getPath().toString, sqlContext))
-			}
+			colMap += (dataset.getPath().toString -> extractColumnMeta(dataset.getPath().toString, sqlContext))
 		}
-		scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(new Path(COLUMN_META_DEFAULT_PATH + "/colmap"), true) }
-		val markerOutputStream = fileSystem.create(new Path(COLUMN_META_DEFAULT_PATH + "/colmap"))
+
+		// persist column map
+		val columnMetaPath = new Path(config.getString("projectx.backend.filesystem.path.column_meta") + "/colmap")
+		scala.util.control.Exception.ignoring(classOf[java.io.IOException]) { fileSystem.delete(columnMetaPath, true) }
+		val markerOutputStream = fileSystem.create(columnMetaPath)
 		val oos = new ObjectOutputStream(markerOutputStream)
-		oos.writeObject(colMap)
+		// convert mutable map to immutable before persistence
+		oos.writeObject(colMap.toMap)
 		oos.close()
 		markerOutputStream.close()
+
+		// for test purpose, print out the column map ( comment out when testing )
+		// val testStr = colMap.map { case (k,v) => (k + ":\n" + v.map(_.map{case (k,v) => (k + ':' + v.toString)}.mkString("\n")).mkString("\n"))}
+		// print(testStr.mkString("\n"))
 	}
 
-	def extractColumnMeta(dataPath:String, sqlContext:SQLContext) : List[Map[String,Any]] = {
-		var columnMetaList = ListBuffer[Map[String,Any]]()
+	def extractColumnMeta(dataPath:String, sqlContext:SQLContext) : List[scala.collection.immutable.Map[String,Any]] = {
+		var columnMetaList = ListBuffer[scala.collection.immutable.Map[String,Any]]()
 		val datasetName = dataPath.split("/").last
 		var dataset = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load(dataPath)
 		// cache to speed up per column access later
@@ -66,13 +72,17 @@ object GenerateColMap {
 			var columnMeta = Map[String, Any]()
 			val columnIndex:Integer = columns.indexOf(columnName)
 			val columnType = columnTypes(columnIndex)._2
+
+			// common column property
 			columnMeta += ("columnType" -> columnType,
 						   "datasetName" -> datasetName,
 						   "columnName" -> columnName)
+
+			// custom inferences to do on every column
 			for (inference <- inferences) {
-				inference.inferColumn(dataset.select(columnName), columnMeta)
+				inference.inferColumn(dataset, dataset.select(columnName), columnMeta)
 			}
-			columnMetaList += columnMeta
+			columnMetaList += columnMeta.toMap
 		}
 		columnMetaList.toList
 	}

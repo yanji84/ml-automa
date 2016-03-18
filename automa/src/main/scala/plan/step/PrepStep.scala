@@ -8,8 +8,6 @@ import com.projectx.automa.plan._
 *
 */
 
-class PrepStep extends Step {
-	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
-		true
-	}
+abstract class PrepStep extends Step {
+	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean
 }

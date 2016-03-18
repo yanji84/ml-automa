@@ -14,5 +14,5 @@ case class PlanExecutionContext (val sparkContext:SparkContext,
 								 val sqlContext:SQLContext,
 								 val label:String,
 								 val mainDatasetName:String,
-								 columnMetaMap:Map[String,List[Map[String, Any]]],
+								 columnMap:Map[String,List[Map[String, Any]]],
 								 datasetMap:Map[String, String])

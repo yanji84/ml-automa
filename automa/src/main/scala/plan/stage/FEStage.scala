@@ -15,7 +15,13 @@ import com.projectx.automa.plan.step._
 */
 
 class FEStage extends Stage {
-	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext) : Unit = {
-
+	val featureEngineeringSteps = List[FEStep]()
+	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext):Unit = {
+		val strategy = new Sequential
+		for (featureEngineeringStep <- featureEngineeringSteps) {
+			if (featureEngineeringStep.check(plan, executionContext)) {
+				strategy.addStepToPlan(featureEngineeringStep, plan)
+			}
+		}
 	}
 }

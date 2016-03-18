@@ -14,7 +14,13 @@ import com.projectx.automa.plan.step._
 */
 
 class EnsembleStage extends Stage {
-	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext) : Unit = {
-
+	val ensembleSteps = List[EnsembleStep]()
+	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext):Unit = {
+		val strategy = new Parallel
+		for (ensembleStep <- ensembleSteps) {
+			if (ensembleStep.check(plan, executionContext)) {
+				strategy.addStepToPlan(ensembleStep, plan)
+			}
+		}
 	}
 }

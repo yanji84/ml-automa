@@ -18,7 +18,6 @@ class FTStage extends Stage {
 	val featureTransformSteps = List[FTStep](new RemoveNull(), new EncodeString())
 	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext):Unit = {
 		val strategy = new Sequential
-
 		for (ftStep <- featureTransformSteps) {
 			if (ftStep.check(plan, executionContext)) {
 				strategy.addStepToPlan(ftStep, plan)

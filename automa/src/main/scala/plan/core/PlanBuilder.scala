@@ -15,13 +15,15 @@ import com.projectx.automa.plan.step.EndStep
 */
 
 class PlanBuilder {
+	// various automation stages
 	val stages = List[Stage](
 		new PrepStage(),
-		//new FEStage(),
+		new FEStage(),
 		new FTStage(),
-		new ModelStage()
-		//new EnsembleStage()
+		new ModelStage(),
+		new EnsembleStage()
 	)
+
 	def buildPlan(executionContext:PlanExecutionContext) : Plan = {
 		val plan = new Plan
 		val strategy = new Sequential

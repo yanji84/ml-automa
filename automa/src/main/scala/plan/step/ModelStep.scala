@@ -9,8 +9,6 @@ import com.projectx.automa.plan._
 * base class for all modeling steps
 */
 
-class ModelStep extends Step {
-	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean = {
-		true
-	}
+abstract class ModelStep extends Step {
+	override def check(plan:Plan, executionContext:PlanExecutionContext) : Boolean
 }

@@ -14,9 +14,9 @@ import com.projectx.automa.plan.step._
 */
 
 class PrepStage extends Stage {
-	val prepSteps = List[PrepStep](/*new JoinMultipleDatasetsStep()*/)
+	val prepSteps = List[PrepStep]()
 	override def buildPlan(plan:Plan, executionContext:PlanExecutionContext):Unit = {
-		val strategy:Sequential = new Sequential
+		val strategy = new Sequential
 		for (prepStep <- prepSteps) {
 			if (prepStep.check(plan, executionContext)) {
 				strategy.addStepToPlan(prepStep, plan)

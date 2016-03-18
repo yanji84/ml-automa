@@ -18,6 +18,8 @@ import com.projectx.automa.codeGenerator._
 * Date: Feb 11, 2016
 * Author: Ji Yan
 *
+* Main Spark job to construct automation plan and drive code generation
+*
 */
 
 object Driver {
@@ -36,17 +38,23 @@ object Driver {
 			datasetMap += (datasetPath.split('/').last.split('.')(0) -> datasetPath)
 		}
 
-		// read column metadata map
+		// read column map
 		val fileStream = fileSystem.open(new Path(config.getString("projectx.backend.filesystem.path.column_meta") + "/colmap"))
 		val objectStream = new ObjectInputStream(fileStream)
 		val colMap:Map[String,List[Map[String, Any]]] = objectStream.readObject.asInstanceOf[Map[String,List[Map[String, Any]]]]
 		objectStream.close()
 		fileStream.close()
 
+		// prepare execution context which contains all the necessary spark context, pre-computed column map and other
+		// essential information about the problem system is trying to solve
 		val executionContext = PlanExecutionContext(sc, sqlContext, "country_destination", "train.csv", colMap, datasetMap)
+		
+		// build automation plan
 		val planBuilder = new PlanBuilder
 		val plan = planBuilder.buildPlan(executionContext)
 		val sequentialPlans:List[List[Step]] = plan.serializePlan
+
+		// generate actual ML code for each path in the automation plan DAG
 		val codeGen:SparkMLCodeGenerator = new SparkMLCodeGenerator
 		for (p <- sequentialPlans) {
 			val code = codeGen.generateCode(p, executionContext)
