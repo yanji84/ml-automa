@@ -7,7 +7,7 @@ environment on their dataset. Frontend repo is at https://github.com/yanji84/Int
 3. An automatic ML environment where based on the analysis done on #1, self-generated
 machine learning code for model automation
 
-For #3, refer to architecture.png for overall architecture diagram
+Overall architecture diagram https://github.com/yanji84/projectx/blob/master/architecture.png
 
 Design doc is available
 
