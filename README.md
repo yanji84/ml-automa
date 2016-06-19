@@ -1,6 +1,6 @@
 Several pieces in this repo
 
-1. A column inference Spark Job that performs basically statistical analysis on columns
+1. A column inference Spark Job that performs statistical analysis on columns
 to extract basic understanding of a particular dataset & automatic relationship discovery
 among different data sets
 2. Backend for an integrated data science environment where user can run R/Python/SQL in a single
