@@ -1,4 +1,4 @@
-Several pieces in this repo
+I have included several side project work in this repo
 
 1. A column inference Spark Job that performs statistical analysis on columns
 to extract basic understanding of a particular dataset & automatic relationship discovery
